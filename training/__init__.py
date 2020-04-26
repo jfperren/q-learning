@@ -1,0 +1,2 @@
+from training.discrete_q_learning_trainer import DiscreteQLearningTrainer
+from training.discrete_q_learning_training_config import DiscreteQLearningTrainingConfig
