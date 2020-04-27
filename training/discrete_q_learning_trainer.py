@@ -4,13 +4,13 @@ import time
 
 class DiscreteQLearningTrainer:
             
-    def __init__(self, env, discretizer, training_config, epsilon, observers=[]):
+    def __init__(self, env, discretizer, training_config, strategy, observers=[]):
         
         self.env = env
         self.discretizer = discretizer
         self.training_config = training_config
-        self.epsilon = epsilon
-        self.observers = observers
+        self.strategy = strategy
+        self.observers = observers + [strategy]
         
         self.resetQ()
     
@@ -25,17 +25,11 @@ class DiscreteQLearningTrainer:
     def resetEnv(self):
         state = self.env.reset()
         return self.discretize(state)
-
-    def epsilon_greedy(self, state):
-        if np.random.random() < self.epsilon:
-            return np.random.randint(0, self.env.action_space.n)
-        else:
-            return np.argmax(self.Q[state[0], state[1]])
         
     def step(self, state):
         
         # Choose an action
-        action = self.epsilon_greedy(state)
+        action = self.strategy.select_action(state, self.Q, self.env)
         
         # Perform update step, don't forget to discretize
         next_state, reward, done, _ = self.env.step(action)
@@ -77,8 +71,6 @@ class DiscreteQLearningTrainer:
         while not done:
             state, reward, done = self.step(state)
             total_reward += reward
-            
-        self.epsilon -= self.epsilon / self.training_config.episodes
 
         return total_reward
             
@@ -90,8 +82,7 @@ class DiscreteQLearningTrainer:
             self.notifyObservers('on_episode_end', {
                 'epoch': i,
                 'reward': total_reward,
-                'episodes': self.training_config.episodes,
-                'epsilon': self.epsilon
+                'episodes': self.training_config.episodes
             })
 
     def close(self):
