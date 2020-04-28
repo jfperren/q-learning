@@ -8,8 +8,8 @@ class EpsilonGreedyStrategy(Strategy):
         super().__init__()
         self.epsilon = epsilon
 
-    def select_action(self, state, Q, env):
+    def select_action(self, state, solver):
         if np.random.random() < self.epsilon:
-            return np.random.randint(0, env.action_space.n)
+            return solver.random_action(state)
         else:
-            return np.argmax(Q[state[0], state[1]])
+            return solver.best_action(state)

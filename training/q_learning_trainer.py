@@ -2,43 +2,25 @@ import numpy as np
 import time
 
 
-class DiscreteQLearningTrainer:
+class QLearningTrainer:
             
-    def __init__(self, env, discretizer, training_config, strategy, observers=[]):
+    def __init__(self, env, solver, strategy, observers=[]):
         
         self.env = env
-        self.discretizer = discretizer
-        self.training_config = training_config
+        self.solver = solver
         self.strategy = strategy
         self.observers = observers + [strategy]
-        
-        self.resetQ()
-    
-    def discretize(self, s):
-        return self.discretizer.parse(s)
-    
-    def resetQ(self):
-        self.Q = np.zeros(
-            np.concatenate([self.discretizer.dimensions, [self.env.action_space.n]])
-        )
-        
-    def resetEnv(self):
-        state = self.env.reset()
-        return self.discretize(state)
-        
+            
     def step(self, state):
         
         # Choose an action
-        action = self.strategy.select_action(state, self.Q, self.env)
+        action = self.strategy.select_action(state, self.solver)
         
         # Perform update step, don't forget to discretize
         next_state, reward, done, _ = self.env.step(action)
-        next_state = self.discretize(next_state)
         
         # Update Q-table
-        future_reward = np.max(self.Q[next_state[0], next_state[1], :])
-        delta = reward + self.training_config.discount * future_reward - self.Q[state[0], state[1], action]
-        self.Q[state[0], state[1], action] += self.training_config.learning_rate * delta
+        self.solver.remember(state, action, reward, next_state)
         
         self.notifyObservers('on_step_end', {
             'action': action,
@@ -52,7 +34,7 @@ class DiscreteQLearningTrainer:
     
     def render(self, fps=60):
         
-        state = self.resetEnv()
+        state = self.env.reset()
         done = False
         total_reward = 0
         
@@ -64,7 +46,7 @@ class DiscreteQLearningTrainer:
     
     def episode(self):
         
-        state = self.resetEnv()
+        state = self.env.reset()
         done = False
         total_reward = 0
         
@@ -74,15 +56,15 @@ class DiscreteQLearningTrainer:
 
         return total_reward
             
-    def train(self):
+    def train(self, episodes):
                 
-        for i in range(self.training_config.episodes):
+        for i in range(episodes):
             total_reward = self.episode()
             
             self.notifyObservers('on_episode_end', {
                 'epoch': i,
                 'reward': total_reward,
-                'episodes': self.training_config.episodes
+                'episodes': episodes
             })
 
     def close(self):

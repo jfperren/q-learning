@@ -10,12 +10,17 @@ class StateAnalysisLogger(LearningObserver, FrequencyTrigger):
     def __init__(self, env, discretizer, frequency):
 
         super().__init__(frequency)
+        self.discretizer = discretizer
         self.visit_stats = np.zeros(
             np.concatenate([discretizer.dimensions, [env.action_space.n]])
         )
+
+    def discretize(self, state):
+        return self.discretizer.parse(state)
         
     def on_step_end(self, context):
-        self.visit_stats[context['state'][0], context['state'][1], context['action']] += 1
+        state = self.discretize(context['state'])
+        self.visit_stats[tuple(state + [context['action']])] += 1
         
     def on_episode_end(self, context):
         if not self.should_trigger(context['epoch']):
