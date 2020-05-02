@@ -1,10 +1,12 @@
 import numpy as np
 
+from agents.behavior.exploration_behavior import ExplorationBehavior
 
-class DiscreteQLearningSolver:
 
-    def __init__(self, env, discretizer, learning_rate, discount):
-        self.env = env
+class QLearningAgent(ExplorationBehavior):
+
+    def __init__(self, env, strategy, discretizer, learning_rate, discount):
+        super().__init__(env, strategy)
         self.discretizer = discretizer
         self.learning_rate = learning_rate
         self.discount = discount
@@ -22,10 +24,7 @@ class DiscreteQLearningSolver:
         state = self.discretize(state)
         return np.argmax(self.Q[state])
 
-    def random_action(self, state):
-        return np.random.randint(0, self.env.action_space.n)
-
-    def remember(self, state, action, reward, next_state):
+    def learn(self, state, action, reward, next_state):
         state = self.discretize(state)
         next_state = self.discretize(next_state)
         future_reward = np.max(self.Q[next_state])
