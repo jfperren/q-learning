@@ -18,27 +18,12 @@ class Tensorboard:
             tf.summary.scalar(tag, value, step=step)
             self.writer.flush()
         
-    def log_histogram(self, tag, values, global_step, bins):
-        counts, bin_edges = np.histogram(values, bins=bins)
-
-        hist = tf.HistogramProto()
-        hist.min = float(np.min(values))
-        hist.max = float(np.max(values))
-        hist.num = int(np.prod(values.shape))
-        hist.sum = float(np.sum(values))
-        hist.sum_squares = float(np.sum(values**2))
-
-        bin_edges = bin_edges[1:]
-
-        for edge in bin_edges:
-            hist.bucket_limit.append(edge)
-        for c in counts:
-            hist.bucket.append(c)
-
-        summary = tf.Summary()
-        summary.value.add(tag=tag, histo=hist)
-        self.writer.add_summary(summary, global_step=global_step)
-        self.writer.flush()
+    def log_histogram(self, tag, values, step, bins):
+        with self.writer.as_default():
+            values = np.array(values)
+            counts, bin_edges = np.histogram(values, bins=bins)
+            tf.summary.histogram(tag, counts, step=step)
+            self.writer.flush()
 
     def log_image(self, tag, img, global_step):
         s = io.BytesIO()
